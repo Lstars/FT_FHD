@@ -23,9 +23,10 @@ module.exports = {
   postcss: [
     require('autoprefixer')({
       browsers: ['iOS >= 7', 'Android >= 4.1']
-    }),require('postcss-px2rem')({
+    }),
+    require('postcss-px2rem')({
       rootValue: 75, // 这里对应的是750的设计图尺寸
-      selectorBlackList: ['html'],
+      selectorBlackList: ['html','weui'],
       mediaQuery: true,
       propBlackList: [] // 如果要保持font-size不转换，替换为 ['font-size']
     })

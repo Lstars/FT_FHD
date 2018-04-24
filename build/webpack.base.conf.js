@@ -83,7 +83,7 @@ module.exports = vuxLoader.merge(webpackConfig, {
     name: 'after-less-parser',
     fn: function(source) {
 			const sourcePath = this.resourcePath.replace(/\\/g, '/')
-      if (sourcePath.indexOf('/vux/src/components') > -1) {
+      if (sourcePath.indexOf('vux/src/components') > -1) {
         source = source.replace(/px/g, 'PX')
       }
       // // 自定义的全局样式大部分不需要转换
@@ -96,8 +96,8 @@ module.exports = vuxLoader.merge(webpackConfig, {
 		name: 'style-parser',
 		// <style></style> 代码处理
     fn: function(source) {
-			const sourcePath = this.resourcePath.replace(/\\/g, '/')
-      if (sourcePath.indexOf('/vux/src/components') > -1) {
+      const sourcePath = this.resourcePath.replace(/\\/g, '/')
+      if (sourcePath.indexOf('vux/src/components') > -1) {
         source = source.replace(/px/g, 'PX')
       }
       // 避免转换1PX.less文件路径
@@ -106,5 +106,8 @@ module.exports = vuxLoader.merge(webpackConfig, {
 			}
       return source
     }
+  },{
+    name: 'less-theme',
+    path: 'src/styles/theme.less' // 相对项目根目录路径
   }]
 })

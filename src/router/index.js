@@ -1,7 +1,8 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import TEST from '@/components/test'
+const _import = require('./_import')
 Vue.use(Router)
+
 export default new Router({
 // 后退后页面位置
   scrollBehavior: () => ({
@@ -10,8 +11,18 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'TEST',
-      component: TEST
+      name: 'sourceList',
+      component: _import('sourceList')
+    },
+    {
+      path: '/sourceList/:sessionId',
+      name: 'sourceList',
+      component: _import('sourceList')
+    },
+    {
+      path: '/addSource/:sessionId',
+      name: 'addSource',
+      component: _import('addSource')
     }
   ]
 })

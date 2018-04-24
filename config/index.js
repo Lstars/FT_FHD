@@ -1,19 +1,31 @@
 /*
- * @Author: FT.FE.Bolin
- * @Date: 2018-04-18 11:23:26
- * @Last Modified by: FT.FE.Bolin
- * @Last Modified time: 2018-04-18 11:23:26
+ * @Author: chenxing 
+ * @Date: 2018-04-19 17:09:35 
+ * @Last Modified by: chenxing
+ * @Last Modified time: 2018-04-23 13:47:08
  */
 
 'use strict'
 const path = require('path')
+let proxyIPs = {
+  WANLI: 'http://192.168.1.121:1234/', // 万里小哥哥
+  HONGDENG: 'http://192.168.5.241:1234/' // 水滴灯小哥哥
+}
 
 module.exports = {
   dev: {
     assetsSubDirectory: 'static',
     assetsPublicPath: '/',
-    proxyTable: {},
-    host: 'localhost',
+    proxyTable: {
+      '/api': {
+        target: proxyIPs.WANLI,
+        changeOrigin: true,
+        pathRewrite: {
+          '^/api': ''
+        }
+      }
+    },
+    host: '0.0.0.0',
     port: 1314,
     autoOpenBrowser: true,
     errorOverlay: true,
