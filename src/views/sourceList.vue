@@ -2,7 +2,7 @@
  * @Author: chenxing 
  * @Date: 2018-04-23 17:40:16 
  * @Last Modified by: chenxing
- * @Last Modified time: 2018-04-24 10:30:49
+ * @Last Modified time: 2018-04-28 11:07:24
  */
 <template>
   <div>
@@ -13,53 +13,85 @@
         <div class="head-rightBtn" @click="loginOut">退出</div>
       </div>
     </sticky>
-    <tab class="tabNav" bar-position="top">
-      <tab-item selected >房源</tab-item>
-      <tab-item >客控</tab-item>
-    </tab>
     <div>
-      <search :auto-fixed="false" ref="search"></search>
+      <tab class="tabNav" bar-position="top">
+        <tab-item :selected="active === 0" @on-item-click="tabChange">房源</tab-item>
+        <tab-item :selected="active === 1" @on-item-click="tabChange">客源</tab-item>
+      </tab>
     </div>
-    <ul class="userNav">
-      <li v-for="item in listData">
+    <div v-show="active === 1" class="searchDiv">
+      <search :auto-fixed="false" 
+        v-model="keyWord" 
+        placeholder="姓名/手机" 
+        @on-submit="searchParam"
+        @on-clear="clearSearch"
+        @on-cancel="clearSearch">
+      </search>
+    </div>
+    <ul class="userNav" v-show="active == 0" style="margin-top:10px">
+      <li v-for="(item, key) in userList" @click="runAs(item)" :key="key">
+        <div class="userLeft">
+          <div class="name width100">{{item.relateName}}</div>
+          <div class="mobile width100">{{item.relateMobile}}</div>
+        </div>
+        <i class="iconfont icon-youjiantou"></i>
+      </li>
+      <i class="iconfont icon-wushuju" v-show="userShow"></i>
+    </ul>
+    <ul class="userNav" v-show="active == 1">
+      <li v-for="(item, key) in listData" @click="toDetail(item)" :key="key">
         <div class="userLeft">
           <div class="line">
-            <div class="name">{{item.name}}</div>
+            <div class="name ellipsis">{{item.name}}</div>
             <div class="gender">{{item.gender | genderStr}}</div>
           </div>
           <div class="mobile">{{item.mobile}}</div>
         </div>
-        <div :class="['userStatus', item.status == 1 ? 'success' : item.status == 3 ? 'warn' : '']">
-          {{item.status | statusStr}}
+        <div :class="['userStatus', item.intentionality == 1 ? 'success' : item.intentionality == 3 ? 'warn' : '']">
+          {{item.intentionality | statusStr}}
           </div>
-        <div class="userRight">{{item.listStatus | listStatus}}</div>
+        <div class="userRight">{{item | listStatus}}</div>
         <i class="iconfont icon-youjiantou"></i>
       </li>
+      <div class="clearfix"></div>
+      <i class="iconfont icon-wushuju" v-show="listShow"></i>
     </ul>
-    <div class="addList">
-      <i class=" iconfont icon-add"></i>
+    <div class="fixedBottm" v-show="active === 1 && fixedFlag">
+      <button type="button" class="btn" @click="toAdd">新增客源</button>
     </div>
-    
   </div>
 </template>
 
 <script>
-import { Sticky, Tab, TabItem, Search, Toast } from 'vux'
-import { login } from '@/api/login'
+import { Sticky, Tab, TabItem, Search } from 'vux'
+import { queryListByPageApi, getApi, getUserNameApi } from '@/api/source'
 
 export default {
   components: {
     Sticky,
     Tab,
     TabItem,
-    Search,
-    Toast
+    Search
   },
-  created() {
-    login().then(res => {
-      console.log(1)
-    }).catch(res => {})
-    console.log(this.$route.params.sessionId)
+  mounted() {
+    const bodyHeight = document.body.clientHeight
+    window.onresize = () => {
+      let newHeight = document.body.clientHeight
+      if (bodyHeight > newHeight) {
+        this.fixedFlag = false
+      } else {
+        this.fixedFlag = true
+      }
+    }
+    this.sessionId = this.$route.params.sessionId
+    if (this.sessionId) {
+      localStorage.setItem('sessionId', this.sessionId)
+    }
+    window['backUrl'] = () => {
+      return 'false'
+    }
+    this.searchParam()
+    this.getUserName()
   },
   filters: {
     genderStr(val) {
@@ -71,43 +103,109 @@ export default {
       return val ? status[val - 1] : '中'
     },
     listStatus(val) {
-      const status = ['电话-意向中', '电话-约带看', '电话-已签约', '电话-无效', '带看-带看中', '结束带看-未签约', '结束带看-已签约']
-      return val ? status[val - 1] : '未知状态'
+      let statusStr = ''
+      switch (val.status) {
+        case 0:
+          statusStr = '新增'
+          break
+        case 1:
+          const arr = ['', '电话-意向中', '电话-约带看', '电话-已签约', '电话-无效']
+          statusStr = val.statusType ? arr[val.statusType] : '未知状态'
+          break
+        case 2:
+          statusStr = val.statusType ? '带看-带看中' : '未知状态'
+          break
+        case 3:
+          const arrs = ['', '结束带看-未签约', '结束带看-已签约']
+          statusStr = val.statusType ? arrs[val.statusType] : '未知状态'
+          break
+        default:
+          statusStr = '未知状态'
+      }
+      return statusStr
     }
   },
   data() {
     return {
-      userName: '大都',
-      listData: [{
-        name: '张三',
-        gender: 1,
-        mobile: 18912344321,
-        status: 1,
-        listStatus: 1
-      },
-      {
-        name: '李四',
-        gender: 2,
-        mobile: 18912344321,
-        status: 2,
-        listStatus: 2
-      },
-      {
-        name: '王五',
-        gender: 1,
-        mobile: 18912344321,
-        status: 3,
-        listStatus: 3
-      }]
+      userName: '',
+      keyWord: '',
+      active: 1,
+      listData: [],
+      userList: [],
+      fixedFlag: true,
+      userShow: false,
+      listShow: false
     }
   },
   methods: {
-    loginOut() {}
+    loginOut() {
+      this.$vux.confirm.show({
+        title: '提示',
+        content: '确定退出当前账号吗？',
+        onConfirm() {
+          window.JSLogout.logOutAction()
+        }
+      })
+    },
+    clearSearch() {
+      console.log(111)
+      this.keyWord = ''
+      this.searchParam()
+    },
+    toDetail(item) {
+      this.$router.push({name: 'sourceDetail', params: {guestSourceId: item.guestSourceId}})
+    },
+    tabChange(index) {
+      this.active = index
+      if (index === 0) {
+        this.houseSearch()
+      } else {
+        this.searchParam()
+      }
+    },
+    runAs(item) {
+      JSRunAs.runAsAction(item.relateMobile)
+    },
+    getUserName() {
+      getUserNameApi({}).then(res => {
+        if (res.data) {
+          this.userName = res.data.name || ''
+        }
+      }).catch(res => {})
+    },
+    houseSearch() {
+      getApi({}).then(res => {
+        if (res.data && res.data.cityManagers) {
+          this.userList = res.data.cityManagers || []
+          this.userShow = this.userList.length > 0 ? false : true
+        }
+      }).catch(res => {
+        this.$vux.toast.text(res.message)
+      })
+    },
+    searchParam() {
+      let param = {
+        pageNo: 1,
+        pageSize: 20,
+        keyword: this.keyWord
+      }
+      queryListByPageApi(param).then(res => {
+        if (res.data && res.data.content) {
+          this.listData = res.data.content || []
+          this.listShow = this.listData.length > 0 ? false : true
+        }
+      }).catch(res => {
+        this.$vux.toast.text(res.message)
+      })
+    },
+    toAdd() {
+      this.$router.push({name: 'addSource', params: {guestSourceId: 0}})
+    }
   }
 }
 </script>
 
-<style rel="stylesheet/less" lang="less">
+<style rel="stylesheet/less" lang="less" scoped>
   .left {
     float: left;
   }
@@ -118,6 +216,7 @@ export default {
     margin-top:10px;
   }
   .userNav {
+    padding-bottom: 100px;
     li {
       width: 100%;
       float: left;
@@ -132,14 +231,14 @@ export default {
         position: absolute;
         right: 10px;
         color: #ccc;
-        top: 15px;
+        top: 25px;
       }
       .userLeft {
-        width: 240px;
+        width: 300px;
         line-height: 40px;
         .left;
         .name{
-          width: 120px;
+          width: 140px;
           .left;
         }
         .gender{
@@ -149,13 +248,16 @@ export default {
         .mobile {
           color:#666;
         }
+        .width100 {
+          width: 100%;
+        }
       }
       .userStatus {
         .left;
         width: 40px;
         height: 40px;
         background: #4680FF;
-        line-height: 40px;
+        line-height: 44px;
         text-align: center;
         color:#fff;
       }
@@ -166,7 +268,7 @@ export default {
         background: rgb(56, 224, 40);
       }
       .userRight {
-        width: 300px;
+        width: 340px;
         text-align: center;
         line-height: 60px;
         padding-right: 10px;
@@ -182,6 +284,7 @@ export default {
     left:50%;
     margin-left: -50px;
     color: #4680FF;
+    z-index: 3;
     i {
       font-size: 100px;
     }

@@ -2,13 +2,10 @@
  * @Author: chenxing
  * @Date: 2018-04-19 17:10:17
  * @Last Modified by: chenxing
- * @Last Modified time: 2018-04-23 11:46:16
+ * @Last Modified time: 2018-04-27 16:53:15
  */
 
 import axios from 'axios'
-// import { Message, MessageBox } from 'element-ui'
-// import store from '../store'
-// import { getSessionId } from '@/utils/auth'
 
 // 创建axios实例
 const service = axios.create({
@@ -21,20 +18,21 @@ service.interceptors.request.use(config => {
   const defaultConfig = {
     version: '1.0',
     timestamp: new Date().getTime(),
-    reqId: '0010C2379272774D6EC087B917CE2A71438DEF90',
     sign: '8F4C4A8E9D850EDD9692DE38723D0543'
   }
   if (config.method.toUpperCase() === 'POST') {
-    // if (store.getters.sessionId) {
-    //   config.data['sessionId'] = getSessionId()
-    // }
-    if (!config.noAssign) {
-      config.data = Object.assign(config.data, defaultConfig)
+    if (!config.isSearch) {
+      const sessionId = localStorage.getItem('sessionId')
+      if (config.isHms) {
+        config.data.params.sessionId = sessionId
+      } else {
+        defaultConfig.sessionId = sessionId
+      }
+      if (!config.noAssign) {
+        config.data = Object.assign(config.data, defaultConfig)
+      }
     }
   } else {
-    // if (store.getters.sessionId) {
-    //   config.params['sessionId'] = getSessionId()
-    // }
     if (!config.noAssign) {
       config.params = Object.assign(config.params, defaultConfig)
     }
@@ -49,13 +47,15 @@ service.interceptors.request.use(config => {
 service.interceptors.response.use(
   response => {
     const res = response.data
-    if (res.code !== 0) {
-      if (res.code === 1011) {
+    if (res.success) {
+      return response.data
+    } else if (res.code !== '0') {
+      if (res.code === '1011') {
         if (res.message === '无数据') {
           return response.data
         }
       }
-      return Promise.reject(res.message)
+      return Promise.reject(res)
     } else {
       return response.data
     }

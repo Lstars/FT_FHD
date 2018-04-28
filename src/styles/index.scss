@@ -18,6 +18,7 @@ body,
 }
 body {
   width: 750px; // 设计稿尺寸
+  max-width: 750px;
   background-color: #EFEFF4;
 }
 
@@ -86,6 +87,12 @@ a:hover {
     text-align: center;
     font-size: 0.45rem;
   }
+  .headRight {
+    position: absolute;
+    right: 20px;
+    top:0;
+    font-size: 0.45rem;
+  }
 }
 .headDiv {
   padding: 0 20px;
@@ -110,4 +117,25 @@ a:hover {
     border: none;
     outline: none;
   }
+}
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.black {
+  color: black !important;
+}
+.searchDiv {
+  line-height: 60px;
+}
+.icon-wushuju {
+  font-size: 200px;
+  color: #666;
+  position: absolute;
+  left: 250px;
+  top: 500px;
+}
+.icon-zuojiantou {
+  width: 70px;
 }

@@ -2,95 +2,85 @@
  * @Author: chenxing 
  * @Date: 2018-04-23 17:40:16 
  * @Last Modified by: chenxing
- * @Last Modified time: 2018-04-24 15:01:06
+ * @Last Modified time: 2018-04-27 17:58:30
  */
 <template>
   <div>
     <sticky>
       <div class="header headDiv">
-        <i class="iconfont icon-zuojiantou"></i>
-        <div class="headerTitle">新增客源</div>       
+        <i class="iconfont icon-zuojiantou" @click="goBack"></i>
+        <div class="headerTitle">客源详情</div>
+        <div class="headRight" @click="edit">编辑</div>       
       </div>
     </sticky>
-    <div class="line">
-      <div class="labelText">姓名</div>
-      <input class="inputs" type="text" placeholder="请输入姓名">
-      <div class="genderBox positionRight">
-        <button-tab v-model="userForm.gender">
-          <button-tab-item @on-item-click="changeGender()">先生</button-tab-item>
-          <button-tab-item @on-item-click="changeGender()">女士</button-tab-item>
-        </button-tab>
-      </div>
+    <div class="line top10">
+      <div class="labelText">姓名：</div>
+      <div class="inputs">{{userForm.name}}</div>
+      <div class="gender" v-show="userForm.mobile">{{userForm.gender | genderStr}}</div>
+    </div>
+    <div class="line" @click="callMobile(userForm.mobile)">
+      <div class="labelText">手机号码：</div>
+      <div class="inputs">{{userForm.mobile}}</div>
+      <i class="iconfont icon-dianhua" v-show="userForm.mobile"></i>
+    </div>
+    <div class="line" v-for="(item, index) in userForm.guestSourceAreas" :key="index">
+      <div class="labelText">{{index === 0 ? '需求区域：' : ''}}</div>
+      <div class="inputs">{{item | areaStr}}</div>
+      <div class="clear"></div>
     </div>
     <div class="line">
-      <div class="labelText">手机号码</div>
-      <input class="inputs" type="number" placeholder="请输入手机号码">
+      <div class="labelText">来源：</div>
+      <div class="inputs">{{userForm | listStatus}}</div>
     </div>
     <div class="line">
-      <div class="labelText">需求区域</div>
-      <div class="textArea">需求区域1</div>
-      <div class="positionRight">
-        <i class="iconfont icon-youjiantou"></i>
-      </div>
+      <div class="labelText">意向度：</div>
+      <div class="inputs">{{userForm.intentionality | statusStr}}</div>
     </div>
-    <div class="line">
-      <div class="labelText"></div>
-      <div class="textArea">需求区域2（非必选）</div>
-      <div class="positionRight">
-        <i class="iconfont icon-youjiantou"></i>
-      </div>
-    </div>
-    <div class="line">
-      <div class="labelText"></div>
-      <div class="textArea">需求区域3（非必选）</div>
-      <div class="positionRight">
-        <i class="iconfont icon-youjiantou"></i>
-      </div>
-    </div>
-    <div class="line">
-      <div class="labelText">来源</div>
-      <div class="textArea">请选择来源渠道</div>
-      <div class="positionRight">
-        <i class="iconfont icon-youjiantou"></i>
-      </div>
-    </div>
-    <div class="line">
-      <div class="labelText">意向度</div>
-      <div class="status">
-        <button-tab>
-          <button-tab-item>低</button-tab-item>
-          <button-tab-item selected>中</button-tab-item>
-          <button-tab-item>高</button-tab-item>
-        </button-tab>
-      </div>
-    </div>
-    <div class="fixedBottm">
-      <button type="button" class="btn" @click="saveData">完成</button>
+    <div class="center">跟进记录</div>
+    <ul class="statusList">
+      <li v-for="(item, key) in followInfos" :key="key">
+        <div>
+          <div class="statusText">{{item | followStr}}</div>
+          <div class="statusUser">{{item.userName || '未知操作人'}}</div>
+          <div class="statusTime">{{item.followDate}}</div>
+        </div>
+        <div class="desc" v-if="item.remark">备注：{{item.remark}}</div>
+      </li>
+      <div class="clear"></div>
+    </ul>
+    <div class="fixedBottm" v-show="fixedFlag">
+      <button type="button" class="btn" @click="changeStatus">跟进</button>
     </div>
   </div>
 </template>
 
 <script>
-import { Sticky, ButtonTab, ButtonTabItem, Toast, Checker, CheckerItem, Group, Picker, PopupPicker } from 'vux'
-import { login } from '@/api/login'
+import { Sticky, ButtonTab, ButtonTabItem, Toast } from 'vux'
+import { detailApi } from '@/api/source'
 
 export default {
   components: {
     Sticky,
     ButtonTab,
     ButtonTabItem,
-    Toast,
-    Picker,
-    PopupPicker,
-    Group,
-    Checker,
-    CheckerItem
+    Toast
   },
-  created() {
-    login().then(res => {
-      console.log(1)
-    }).catch(res => {})
-    console.log(this.$route.params.sessionId)
+  mounted() {
+    window['backUrl'] = () => {
+      this.goBack()
+      return 'true'
+    }
+    const bodyHeight = document.body.clientHeight
+    window.onresize = () => {
+      let newHeight = document.body.clientHeight
+      if (bodyHeight > newHeight) {
+        this.fixedFlag = false
+      } else {
+        this.fixedFlag = true
+      }
+    }
+    this.sessionId = localStorage.getItem('sessionId')
+    this.getDetail()
   },
   filters: {
     genderStr(val) {
@@ -102,108 +92,85 @@ export default {
       return val ? status[val - 1] : '中'
     },
     listStatus(val) {
-      const status = ['电话-意向中', '电话-约带看', '电话-已签约', '电话-无效', '带看-带看中', '结束带看-未签约', '结束带看-已签约']
-      return val ? status[val - 1] : '未知状态'
+      const online = ['', '闲鱼', '58个人', '58企业', '赶集', '安居客', '网络搜索', '社交媒体（论坛、豆瓣等）', '麦邻生活', '官方微信', '其他渠道']
+      const offline = ['', '蹲点截客', '企业客户', '小广告', '老客推荐']
+      let str = ''
+      if (val.source === 1) {
+        str = '网络 - ' + (online[val.sourceType] || '')
+      } else {
+        str = '线下 - ' + (offline[val.sourceType] || '')
+      }
+      return str
+    },
+    areaStr(item) {
+      let str = ''
+      str = (item.zoneId ? (item.zoneName + ' - ') : '') + `${item.provinceName}${item.cityName}${item.regionName}`
+      return str
+    },
+    followStr(item) {
+      let str = ''
+      const status = ['', '电话跟进', '带看中', '结束带看']
+      if (item.mode === 0) {
+        str = '新增'
+      } else if (item.mode === 3 && item.modeType === 2) {
+        str = '已签约'
+      } else {
+        str = status[item.mode]
+      }
+      return str
     }
   },
   data() {
     return {
       userForm: {
         name: '',
-        gender: 2,
+        gender: 1,
         mobile: '',
         intentionality: 2,
         source: '',
-        sourceType: '',
-        areaAttribute1: '',
-        areaAttribute2: '',
-        areaAttribute3: ''
+        sourceType: ''
       },
-      sourceList: [
-        {
-          name: '网络',
-          value: 1,
-          parent: 0
-        }, {
-          name: '线下',
-          value: 2,
-          parent: 0
-        }, {
-          name: '闲鱼',
-          value: 1,
-          parent: 1
-        }, {
-          name: '58个人',
-          value: 2,
-          parent: 1
-        }, {
-          name: '58企业',
-          value: 3,
-          parent: 1
-        }, {
-          name: '赶集',
-          value: 4,
-          parent: 1
-        }, {
-          name: '安居客',
-          value: 5,
-          parent: 1
-        }, {
-          name: '网络搜索',
-          value: 6,
-          parent: 1
-        }, {
-          name: '社交媒体（论坛、豆瓣等）',
-          value: 7,
-          parent: 1
-        }, {
-          name: '麦邻生活',
-          value: 8,
-          parent: 1
-        }, {
-          name: '官方微信',
-          value: 9,
-          parent: 1
-        }, {
-          name: '其他渠道',
-          value: 10,
-          parent: 1
-        }, {
-          name: '蹲点截客',
-          value: 1,
-          parent: 2
-        }, {
-          name: '企业客户',
-          value: 2,
-          parent: 2
-        }, {
-          name: '小广告',
-          value: 3,
-          parent: 2
-        }, {
-          name: '老客推荐',
-          value: 4,
-          parent: 2
-        }
-      ]
+      fixedFlag: true,
+      sessionId: '',
+      followInfos: []
     }
   },
   methods: {
-    ChooseArea() {
-      this.userForm.areaAttribute1 = 'haha'
-      console.log(this.userForm)
+    getDetail() {
+      let param = {
+        guestSourceId: parseInt(this.$route.params.guestSourceId)
+      }
+      detailApi(param).then(res => {
+        if (res.data && typeof res.data === 'object') {
+          this.userForm = Object.assign(this.userForm, res.data)
+          this.followInfos = res.data.followInfos
+        }
+      }).catch(res => {
+        this.$vux.toast.text(res.message)
+      })
     },
-    changeGender(index) {
-      console.log(this.userForm.gender)
+    callMobile(mobile) {
+      if (mobile) {
+        window.call.callAction(mobile)
+      }
     },
-    saveData() {
-      console.log(this.userForm)
+    goBack() {
+      this.$router.push({name: 'sourceList', params: {sessionId: this.sessionId}})
+    },
+    edit() {
+      this.$router.push({name: 'addSource', params: {guestSourceId: this.$route.params.guestSourceId}})
+    },
+    changeStatus() {
+      this.$router.push({name: 'sourceFollow', params: {guestSourceId: this.$route.params.guestSourceId}})
     }
   }
 }
 </script>
 
-<style rel="stylesheet/less" lang="less">
+<style rel="stylesheet/less" lang="less" scoped>
+  * {
+    box-sizing: border-box;
+  }
   .left {
     float: left;
   }
@@ -218,49 +185,97 @@ export default {
     right: 10px;
     color: #ccc;
   }
-  .genderBox {
-    width: 200px;
-    top:10px;
+  .top10 {
+    margin-top: 10px;
+  }
+  .center {
+    text-align: center;
+    line-height: 70px;
+    border-top:1px solid #ddd;
+    font-size: 0.4rem;
+    color: #666;
+  }
+  .gender {
+    padding: 0px 10px;
+    color: #fff;
+    background: #4680FF;
+    position: absolute;
+    line-height: 40px;
+    font-size: 0.3rem;
+    top: 8px;
+    left:350px;
+  }
+  .clear {
+    clear: both;
+  }
+  ul.statusList {
+    width: 100%;
+    margin-bottom: 100px;
+    li {
+      .left;
+      width: 100%;
+      margin-bottom: 15px;
+      background: #fff;
+      padding: 20px 0;
+      line-height: 30px;
+      min-height: 30px;
+      text-align: center;
+      .statusText {
+        width: 3rem;
+        border-right: 1px solid #ccc;
+        text-align: left;
+        padding-left: 20px;
+        .left;
+      }
+      .statusUser {
+        width: 2.5rem;
+        .left;
+        border-right: 1px solid #ccc;
+      }
+      .statusTime {
+        .left;
+        width: 4.5rem;
+      }
+      .desc {
+        width: 100%;
+        text-align: left;
+        padding-top: 20px;
+        line-height: 40px;
+        color: #666;
+        .left;
+        padding-left: 20px;
+      }
+    }
   }
   .line {
     width: 100%;
-    min-height: 80px;
-    line-height: 80px;
+    min-height: 60px;
+    line-height: 60px;
     padding-left: 20px;
     border-bottom: 1px solid #eee;
     font-size: 0.35rem;
-    background: #fff;
     position: relative;
     .labelText {
       width: 160px;
-      height: 80px;
+      height: 60px;
+      text-align: right;
+      padding-right: 10px;
       .left;
     }
-    .textArea {
-      .left;
-      line-height: 50px;
-      padding: 15px 0;
-      width: 500px;
-      color: #999;
-      font-size: 0.35rem;
+    .icon-dianhua {
+      color:rgb(56, 224, 40);
+      left: 380px;
+      top:0;
+      position: absolute;
     }
     .inputs {
       .left;
       border:none;
       background: none;
       padding: 15px 0;
-      line-height: 50px;
+      line-height: 30px;
       width: 500px;
       font-size: 0.35rem;
-      &:focus{
-        border: none;
-        outline: none;
-      }
-    }
-    .status {
-      .left;
-      width: 500px;
-      margin-top: 10px;
     }
   }
 </style>

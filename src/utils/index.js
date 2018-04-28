@@ -1,8 +1,8 @@
 /*
- * @Author: chenxing 
- * @Date: 2018-04-19 17:10:01 
- * @Last Modified by:   chenxing 
- * @Last Modified time: 2018-04-19 17:10:01 
+ * @Author: chenxing
+ * @Date: 2018-04-19 17:10:01
+ * @Last Modified by: chenxing
+ * @Last Modified time: 2018-04-25 19:41:01
  */
 
 export function parseTime(time, cFormat) {

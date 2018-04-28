@@ -11,7 +11,7 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'sourceList',
+      name: 'index',
       component: _import('sourceList')
     },
     {
@@ -20,9 +20,19 @@ export default new Router({
       component: _import('sourceList')
     },
     {
-      path: '/addSource/:sessionId',
+      path: '/addSource/:guestSourceId',
       name: 'addSource',
       component: _import('addSource')
+    },
+    {
+      path: '/sourceDetail/:guestSourceId',
+      name: 'sourceDetail',
+      component: _import('sourceDetail')
+    },
+    {
+      path: '/sourceFollow/:guestSourceId',
+      name: 'sourceFollow',
+      component: _import('sourceFollow')
     }
   ]
 })

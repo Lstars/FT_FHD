@@ -1,17 +1,13 @@
 /*
  * @Author: chenxing 
  * @Date: 2018-04-19 17:09:49 
- * @Last Modified by:   chenxing 
- * @Last Modified time: 2018-04-19 17:09:49 
+ * @Last Modified by: chenxing
+ * @Last Modified time: 2018-04-25 10:04:28
  */
-
-
-'use strict'
-const merge = require('webpack-merge')
-const prodEnv = require('./prod.env')
-
-module.exports = merge(prodEnv, {
+module.exports = {
   NODE_ENV: '"development"',
-  // BASE_API: '"http://localhost:9528/api/"'
+  ENV_CONFIG: '"dev"',
+  NPM_CONFIG_REPORT: '"false"',
+  // BASE_API: '"http://192.168.230:1314/api/"'
   BASE_API: '"https://dev.mdguanjia.com/bop/"'
-})
+}

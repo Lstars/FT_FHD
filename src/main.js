@@ -3,6 +3,7 @@ import FastClick from 'fastclick'
 import App from './App'
 import 'lib-flexible'
 import router from './router'
+import { ConfirmPlugin, ToastPlugin, DatetimePlugin } from 'vux'
 
 FastClick.attach(document.body)
 
@@ -16,6 +17,9 @@ const vm = new Vue({
 })
 
 Vue.use(vm)
+Vue.use(ConfirmPlugin)
+Vue.use(ToastPlugin)
+Vue.use(DatetimePlugin)
 
 const urlSearchParams = {}
 if (location.search.indexOf('?') !== -1) {
