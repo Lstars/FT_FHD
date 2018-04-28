@@ -2,7 +2,7 @@
  * @Author: chenxing 
  * @Date: 2018-04-23 17:40:16 
  * @Last Modified by: chenxing
- * @Last Modified time: 2018-04-27 17:57:57
+ * @Last Modified time: 2018-04-28 15:25:48
  */
 <template>
   <div>
@@ -47,7 +47,8 @@
             <search 
               :auto-fixed="false" 
               v-model="keyword" 
-              placeholder="搜索房源" 
+              placeholder="搜索房源"
+              @on-change="debounceSearch" 
               @on-submit="searchParam">
             </search>
             <ul class="searchNav">
@@ -57,6 +58,7 @@
                 @click="chooseHouse(item)">
                 {{item.city}}-{{item.name}}
               </li>
+              <li class="textCenter" v-show="noData">未查询到数据</li>
             </ul>
           </div>
         </div>
@@ -72,7 +74,7 @@
 </template>
 
 <script>
-import { Sticky, PopupPicker, Group, Popup, TransferDom, Search, XTextarea, dateFormat } from 'vux'
+import { Sticky, PopupPicker, Group, Popup, TransferDom, Search, XTextarea, dateFormat, debounce } from 'vux'
 import { houseApi, saveFollowInfoApi } from '@/api/source'
 import { deepClone } from '@/utils'
 export default {
@@ -136,6 +138,7 @@ export default {
         modeType: '',
         remark: ''
       },
+      noData: false,
       fixedFlag: true,
       keyword: '',
       searchFlag: false,
@@ -222,19 +225,29 @@ export default {
     searchHide() {
       this.searchList = []
       this.keyword = ''
+      this.noData = false
     },
+    debounceSearch: debounce(function(){
+      this.searchParam()
+    }, 500),
     searchParam(val) {
+      if (this.keyword === ''){
+        this.searchList = []
+        return false
+      }
       const param = {
         pageSize: 10,
         pageNo: 1,
         tags: ['fhd'],
-        keyword: val
+        keyword: this.keyword
       }
       houseApi(param).then(res => {
         if (res.result && res.result.length > 0) {
-          this.searchList = res.result
+          this.searchList = deepClone(res.result)
+          this.noData = false
         } else {
-          this.$vux.toast.text('未查询到房源')
+          this.noData = true
+          this.searchList = []
         }
       }).catch(res => {})
     },
@@ -311,7 +324,9 @@ export default {
     width: 200px;
     top:10px;
   }
-  
+  .textCenter {
+    text-align: center;
+  }
   .line {
     width: 100%;
     min-height: 80px;

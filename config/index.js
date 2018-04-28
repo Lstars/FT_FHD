@@ -2,7 +2,7 @@
  * @Author: chenxing 
  * @Date: 2018-04-19 17:09:35 
  * @Last Modified by: chenxing
- * @Last Modified time: 2018-04-28 10:22:10
+ * @Last Modified time: 2018-04-28 12:53:08
  */
 
 'use strict'
@@ -25,7 +25,7 @@ module.exports = {
         }
       }
     },
-    host: '0.0.0.0',
+    host: '192.168.5.230',
     port: 1314,
     autoOpenBrowser: true,
     errorOverlay: true,
